@@ -175,7 +175,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 			if (nFiles == 1)
 			{
 				DragQueryFile(hDrop, 0, szFileName, sizeof(szFileName));
-				if ( PathMatchSpec(szFileName, TEXT("*.mp3")) )
+				if ( PathMatchSpec(szFileName, TEXT("*.mp3")) ||
+					 PathMatchSpec(szFileName, TEXT("*.wav")) )
 				{
 					SetWindowText(hWnd, szFileName);
 					PostMessage(hWnd, WM_APP, 0, 0);
