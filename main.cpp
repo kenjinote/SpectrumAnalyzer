@@ -225,47 +225,51 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPreInst, LPSTR pCmdLine, int nCmdShow)
 {
 	const HWND hWindow = FindWindow(szClassName, 0);
+	int argc;
+	LPTSTR* argv = CommandLineToArgvW(GetCommandLine(), &argc);
 	if (hWindow)
 	{
-		SetForegroundWindow(hWindow);
-		int n;
-		LPTSTR* argv = CommandLineToArgvW(GetCommandLine(), &n);
-		if (n == 2)
+		if (argc > 1)
 		{
 			SetWindowText(hWindow, argv[1]);
-			SendMessage(hWindow, WM_APP, 0, 0);
+			PostMessage(hWindow, WM_APP, 0, 0);
 		}
-		LocalFree(argv);
-		return 0;
 	}
-	MSG msg;
-	WNDCLASS wndclass = { 0, WndProc, 0, 0, hInstance, LoadIcon(hInstance, (LPCTSTR)IDI_ICON1), LoadCursor(0, IDC_ARROW), 0, 0, szClassName };
-	RegisterClass(&wndclass);
-	RECT rect = { 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT };
-	AdjustWindowRect(&rect, WS_VISIBLE | WS_POPUP, FALSE);
-	HWND hWnd = CreateWindowEx(WS_EX_TOPMOST, szClassName, 0, WS_VISIBLE | WS_POPUP, CW_USEDEFAULT, 0, rect.right - rect.left, rect.bottom - rect.top, 0, 0, hInstance, 0);
-	ShowWindow(hWnd, SW_SHOWDEFAULT);
-	UpdateWindow(hWnd);
-	BOOL done = FALSE;
-	while (!done)
+	else
 	{
-		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+		MSG msg;
+		WNDCLASS wndclass = { 0, WndProc, 0, 0, hInstance, LoadIcon(hInstance, (LPCTSTR)IDI_ICON1), LoadCursor(0, IDC_ARROW), 0, 0, szClassName };
+		RegisterClass(&wndclass);
+		RECT rect = { 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT };
+		AdjustWindowRect(&rect, WS_VISIBLE | WS_POPUP | WS_SYSMENU, FALSE);
+		HWND hWnd = CreateWindowEx(WS_EX_TOPMOST, szClassName, (argc > 1) ? argv[1] : 0, WS_VISIBLE | WS_POPUP | WS_SYSMENU, CW_USEDEFAULT, 0, rect.right - rect.left, rect.bottom - rect.top, 0, 0, hInstance, 0);
+		SystemParametersInfo(SPI_GETWORKAREA, 0, &rect, 0);
+		SetWindowPos(hWnd, 0, rect.left + 10, rect.bottom - WINDOW_HEIGHT - 10, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
+		ShowWindow(hWnd, SW_SHOWDEFAULT);
+		UpdateWindow(hWnd);
+		if (argc > 1) PostMessage(hWnd, WM_APP, 0, 0);
+		BOOL done = FALSE;
+		while (!done)
 		{
-			if (msg.message == WM_QUIT)
+			if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
 			{
-				done = TRUE;
+				if (msg.message == WM_QUIT)
+				{
+					done = TRUE;
+				}
+				else
+				{
+					TranslateMessage(&msg);
+					DispatchMessage(&msg);
+				}
 			}
-			else
+			else if (active)
 			{
-				TranslateMessage(&msg);
-				DispatchMessage(&msg);
+				DrawGLScene();
+				SwapBuffers(hDC);
 			}
-		}
-		else if (active)
-		{
-			DrawGLScene();
-			SwapBuffers(hDC);
 		}
 	}
-	return msg.wParam;
+	LocalFree(argv);
+	return 0;
 }
